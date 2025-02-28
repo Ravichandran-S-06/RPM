@@ -4,6 +4,8 @@ import Auth from "./components/Auth";
 import Dashboard from "./components/Dashboard";
 import HODDashboard from "./components/HODDashboard";
 import Home from "./components/Home";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 
 const App = () => {
   return (
@@ -12,8 +14,16 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Auth isSignUp={false} />} />
         <Route path="/signup" element={<Auth isSignUp={true} />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/hod-dashboard" element={<HODDashboard />} />
+        <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+        <Route path="/hod-dashboard" element={
+            <ProtectedRoute>
+              <HODDashboard />
+            </ProtectedRoute>
+          } />
       </Routes>
     </Router>
   );
