@@ -126,7 +126,7 @@ const HODDashboard = () => {
 
   return (
     <div className="hod-dashboard-container">
-      <button className="menu-button" onClick={toggleSidebar}>
+      <button className="sidebar-toggle" onClick={toggleSidebar}>
         ☰
       </button>
       <div className={`hod-sidebar ${sidebarOpen ? "open" : ""}`}>

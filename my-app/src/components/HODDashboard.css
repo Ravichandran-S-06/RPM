@@ -112,10 +112,47 @@
   
   .hod-menu-button {
       display: block;
+      height: 5px;
   }
   
   .hod-main-content {
       margin-left: 0;
       width: 100%;
   }
+
+
+.sidebar-toggle {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: black; /* Transparent background */
+  border: none;
+  padding: 5px 12px;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.3s ease;
+  z-index: 1000;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.4); /* Slightly visible on hover */
+}
+
+.hod-sidebar {
+  position: fixed;
+  top: 0;
+  left: -250px; /* Hidden initially */
+  width: 250px;
+  height: 100vh;
+  background: black;
+  color: white;
+  padding: 20px;
+  transition: left 0.3s ease-in-out;
+}
+
+.hod-sidebar.open {
+  left: 0;
+}
+
 }
