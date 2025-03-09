@@ -124,7 +124,7 @@
 
 .sidebar-toggle {
   position: fixed;
-  top: 10px;
+  top: 55px;
   left: 10px;
   background: black; /* Transparent background */
   border: none;
@@ -143,6 +143,7 @@
 .hod-sidebar {
   position: fixed;
   top: 0;
+  margin-top: 50px;
   left: -250px; /* Hidden initially */
   width: 250px;
   height: 100vh;
