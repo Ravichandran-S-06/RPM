@@ -130,7 +130,7 @@ const HODDashboard = () => {
         ☰
       </button>
       <div className={`hod-sidebar ${sidebarOpen ? "open" : ""}`}>
-        <h2>HOD Dashboard</h2>
+        <h2>Admin Dashboard</h2>
         <button
           onClick={() => {
             setShowForm(false);

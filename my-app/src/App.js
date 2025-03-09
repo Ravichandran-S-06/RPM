@@ -5,11 +5,14 @@ import Dashboard from "./components/Dashboard";
 import HODDashboard from "./components/HODDashboard";
 import Home from "./components/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Header from "./components/Header";
+
 
 
 const App = () => {
   return (
     <Router>
+      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Auth isSignUp={false} />} />

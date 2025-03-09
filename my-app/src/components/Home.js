@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
-    <div style={{ textAlign: "center", padding: "50px" }}>
+    <div style={{ textAlign: "center", padding: "50px", marginTop: "20px" }}>
       <h1>Research Paper Management System</h1>
       <p>Manage and track research publications efficiently.</p>
       <div style={{ marginTop: "20px" }}>
