@@ -4,7 +4,6 @@ import { auth, db } from "../firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -20,14 +19,19 @@ const HODDashboard = () => {
   const [type, setType] = useState("Journal");
   const [paperLink, setPaperLink] = useState("");
   const [certLink, setCertLink] = useState("");
+  const [indexing, setIndexing] = useState("");
+  const [monthYear, setMonthYear] = useState("");
+  const [status, setStatus] = useState("Published");
+  const [department, setDepartment] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [showMyPapers, setShowMyPapers] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [sortType, setSortType] = useState("all");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDepartment, setFilterDepartment] = useState("all");
+  const [filterIndexing, setFilterIndexing] = useState("all");
 
   const navigate = useNavigate();
 
@@ -55,7 +59,7 @@ const HODDashboard = () => {
   };
 
   const handleAdd = async () => {
-    if (!title || !authors || !paperLink || !certLink) {
+    if (!title || !authors || !paperLink || !certLink || !indexing || !monthYear || !department) {
       alert("Please fill in all fields.");
       return;
     }
@@ -63,25 +67,24 @@ const HODDashboard = () => {
     setLoading(true);
 
     try {
+      const paperData = {
+        title,
+        authors,
+        type,
+        paperLink,
+        certLink,
+        indexing,
+        monthYear,
+        status,
+        department,
+        userEmail: user.email,
+      };
+
       if (editingId) {
-        await updateDoc(doc(db, "papers", editingId), {
-          title,
-          authors,
-          type,
-          paperLink,
-          certLink,
-          userEmail: user.email,
-        });
+        await updateDoc(doc(db, "papers", editingId), paperData);
         setEditingId(null);
       } else {
-        await addDoc(collection(db, "papers"), {
-          title,
-          authors,
-          type,
-          paperLink,
-          certLink,
-          userEmail: user.email,
-        });
+        await addDoc(collection(db, "papers"), paperData);
       }
 
       setTitle("");
@@ -89,8 +92,11 @@ const HODDashboard = () => {
       setType("Journal");
       setPaperLink("");
       setCertLink("");
+      setIndexing("");
+      setMonthYear("");
+      setStatus("Published");
+      setDepartment("");
       alert("Paper details saved successfully!");
-      setShowForm(false);
     } catch (error) {
       console.error("Error adding document: ", error);
       alert("Failed to save!");
@@ -105,8 +111,11 @@ const HODDashboard = () => {
     setType(paper.type);
     setPaperLink(paper.paperLink);
     setCertLink(paper.certLink);
+    setIndexing(paper.indexing);
+    setMonthYear(paper.monthYear);
+    setStatus(paper.status);
+    setDepartment(paper.department);
     setEditingId(paper.id);
-    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -115,14 +124,39 @@ const HODDashboard = () => {
     }
   };
 
-  const filteredPapers = papers
-    .filter((paper) => (showMyPapers ? paper.userEmail === user?.email : true))
-    .filter((paper) => paper.title.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter((paper) => (sortType === "all" ? true : paper.type === sortType));
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Get unique values for filtering
+  const uniqueDepartments = [...new Set(papers.map((paper) => paper.department))];
+  const uniqueIndexing = [...new Set(papers.map((paper) => paper.indexing))];
+  const uniqueStatuses = [...new Set(papers.map((paper) => paper.status))];
+
+  // Filter and sort papers
+  const filteredPapers = papers
+    .filter((paper) =>
+      paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      paper.authors.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter((paper) => (filterStatus === "all" ? true : paper.status === filterStatus))
+    .filter((paper) => (filterDepartment === "all" ? true : paper.department === filterDepartment))
+    .filter((paper) => (filterIndexing === "all" ? true : paper.indexing === filterIndexing))
+    .sort((a, b) => {
+      if (sortBy === "monthYear") {
+        return new Date(b.monthYear) - new Date(a.monthYear);
+      } else if (sortBy === "title") {
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === "status") {
+        return a.status.localeCompare(b.status);
+      } else if (sortBy === "department") {
+        return a.department.localeCompare(b.department);
+      } else if (sortBy === "indexing") {
+        return a.indexing.localeCompare(b.indexing);
+      } else {
+        return 0;
+      }
+    });
 
   return (
     <div className="hod-dashboard-container">
@@ -131,114 +165,81 @@ const HODDashboard = () => {
       </button>
       <div className={`hod-sidebar ${sidebarOpen ? "open" : ""}`}>
         <h2 style={{ color: "white" }}>Admin Dashboard</h2>
-        <button
-          onClick={() => {
-            setShowForm(false);
-            setShowMyPapers(false);
-            setSortType("all");
-            toggleSidebar();
-          }}
-        >
-          📄 All Research Papers
-        </button>
-        <button
-          onClick={() => {
-            setShowMyPapers(true);
-            toggleSidebar();
-          }}
-        >
-          📝 My Papers
-        </button>
-        <button
-          onClick={() => {
-            setShowForm(true);
-            toggleSidebar();
-          }}
-        >
-          ➕ Research Paper Dashboard
-        </button>
         <button onClick={handleLogout}>🔓 Logout</button>
       </div>
 
       <div className="hod-main-content">
-        {showForm ? (
-          <>
-            <h2>📑 Add / Edit Research Paper</h2>
-            <div className="input-container">
-              <input
-                type="text"
-                placeholder="Paper Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Authors (comma-separated)"
-                value={authors}
-                onChange={(e) => setAuthors(e.target.value)}
-                required
-              />
-              <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="Journal">Journal</option>
-                <option value="Conference">Conference</option>
-              </select>
-              <input
-                type="url"
-                placeholder="Google Drive Link (Paper PDF)"
-                value={paperLink}
-                onChange={(e) => setPaperLink(e.target.value)}
-                required
-              />
-              <input
-                type="url"
-                placeholder="Google Drive Link (Certificate)"
-                value={certLink}
-                onChange={(e) => setCertLink(e.target.value)}
-                required
-              />
-              <button onClick={handleAdd} disabled={loading}>
-                {editingId ? "Update Paper" : "Add Paper"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2>{showMyPapers ? "My Research Papers" : "All Research Papers"}</h2>
-            <input
-              type="text"
-              placeholder="🔍 Search papers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="hod-search-bar"
-            />
-            <select onChange={(e) => setSortType(e.target.value)} className="hod-sort-dropdown">
-              <option value="all">All</option>
-              <option value="Journal">Journal</option>
-              <option value="Conference">Conference</option>
-            </select>
-            <ul className="hod-paper-list">
-              {filteredPapers.map((paper) => (
-                <li key={paper.id}>
-                  <strong>{paper.title}</strong> ({paper.type})
-                  <p>Authors: {paper.authors}</p>
-                  <a href={paper.paperLink} target="_blank" rel="noopener noreferrer">
-                    📄 View Paper
-                  </a>
+        <h2>All Research Papers</h2>
+        <input
+          type="text"
+          placeholder="🔍 Search by title or author..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="hod-search-bar"
+        />
+
+        <div className="filter-container">
+          <select onChange={(e) => setSortBy(e.target.value)}>
+            <option value="all">Sort By</option>
+            <option value="monthYear">Month/Year</option>
+            <option value="title">Title</option>
+            <option value="status">Status</option>
+            <option value="department">Department</option>
+            <option value="indexing">Indexing</option>
+          </select>
+
+          <select onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="all">All Statuses</option>
+            {uniqueStatuses.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          <select onChange={(e) => setFilterDepartment(e.target.value)}>
+            <option value="all">All Departments</option>
+            {uniqueDepartments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
+
+          <select onChange={(e) => setFilterIndexing(e.target.value)}>
+            <option value="all">All Indexing</option>
+            {uniqueIndexing.map((index) => (
+              <option key={index} value={index}>
+                {index}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <ul className="hod-paper-list">
+          {filteredPapers.map((paper, index) => (
+            <React.Fragment key={paper.id}>
+              <li>
+                <strong>{paper.title}</strong> ({paper.type})
+                <p>Authors: {paper.authors}</p>
+                <p>Department: {paper.department}</p>
+                <p>Indexing: {paper.indexing}</p>
+                <p>Status: {paper.status}</p>
+                <p>Month/Year: {paper.monthYear}</p>
+                <a href={paper.paperLink} target="_blank" rel="noopener noreferrer">
+                  📄 View Paper
+                </a>
+                {paper.certLink && (
                   <a href={paper.certLink} target="_blank" rel="noopener noreferrer">
                     📜 View Certificate
                   </a>
-                  <div>
-                    <button onClick={() => handleEdit(paper)}>✏</button>
-                    <button className="hod-delete-btn" onClick={() => handleDelete(paper.id)}>
-                      🗑
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+                )}
+                
+              </li>
+              {index < filteredPapers.length - 1 && <hr className="dotted-line" />}
+            </React.Fragment>
+          ))}
+        </ul>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ const Auth = ({ isSignUp }) => {
   
       const loggedInUser = userCredential?.user; // Ensure `user` exists
   
-      if (loggedInUser?.email === "hodis@vvce.ac.in") {
+      if (loggedInUser?.email === "admin@vvce.ac.in") {
         navigate("/hod-dashboard");
       } else {
         navigate("/dashboard");
