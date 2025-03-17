@@ -2,36 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import "./HODDashboard.css";
 
 const HODDashboard = () => {
   const [papers, setPapers] = useState([]);
-  const [title, setTitle] = useState("");
-  const [authors, setAuthors] = useState("");
-  const [type, setType] = useState("Journal");
-  const [paperLink, setPaperLink] = useState("");
-  const [certLink, setCertLink] = useState("");
-  const [indexing, setIndexing] = useState("");
-  const [monthYear, setMonthYear] = useState("");
-  const [status, setStatus] = useState("Published");
-  const [department, setDepartment] = useState("");
-  const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sortBy, setSortBy] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterIndexing, setFilterIndexing] = useState("all");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
 
   const navigate = useNavigate();
 
@@ -58,82 +42,106 @@ const HODDashboard = () => {
     navigate("/");
   };
 
-  const handleAdd = async () => {
-    if (!title || !authors || !paperLink || !certLink || !indexing || !monthYear || !department) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const paperData = {
-        title,
-        authors,
-        type,
-        paperLink,
-        certLink,
-        indexing,
-        monthYear,
-        status,
-        department,
-        userEmail: user.email,
-      };
-
-      if (editingId) {
-        await updateDoc(doc(db, "papers", editingId), paperData);
-        setEditingId(null);
-      } else {
-        await addDoc(collection(db, "papers"), paperData);
-      }
-
-      setTitle("");
-      setAuthors("");
-      setType("Journal");
-      setPaperLink("");
-      setCertLink("");
-      setIndexing("");
-      setMonthYear("");
-      setStatus("Published");
-      setDepartment("");
-      alert("Paper details saved successfully!");
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("Failed to save!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEdit = (paper) => {
-    setTitle(paper.title);
-    setAuthors(paper.authors);
-    setType(paper.type);
-    setPaperLink(paper.paperLink);
-    setCertLink(paper.certLink);
-    setIndexing(paper.indexing);
-    setMonthYear(paper.monthYear);
-    setStatus(paper.status);
-    setDepartment(paper.department);
-    setEditingId(paper.id);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this paper?")) {
-      await deleteDoc(doc(db, "papers", id));
-    }
-  };
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Get unique values for filtering
-  const uniqueDepartments = [...new Set(papers.map((paper) => paper.department))];
-  const uniqueIndexing = [...new Set(papers.map((paper) => paper.indexing))];
-  const uniqueStatuses = [...new Set(papers.map((paper) => paper.status))];
+  const highlightAuthors = (authors) => {
+    return authors.split(", ").map((author, index) => {
+      const lowerAuthor = author.toLowerCase();
+      const isHighlighted = lowerAuthor.startsWith("prof.") || lowerAuthor.startsWith("dr.");
+  
+      return (
+        <React.Fragment key={index}>
+          {isHighlighted ? (
+            <span style={{ color: "blue", fontWeight: "bold" }}>{author}</span>
+          ) : (
+            author
+          )}
+          {index < authors.split(", ").length - 1 ? ", " : ""}
+        </React.Fragment>
+      );
+    });
+  };
+  
 
-  // Filter and sort papers
+  const handlePrint = () => {
+    const formatAuthorsForPrint = (authors) => {
+      return authors.split(", ").map((author) => {
+        const lowerAuthor = author.toLowerCase();
+        return lowerAuthor.startsWith("prof.") || lowerAuthor.startsWith("dr.")
+          ? `<strong>${author}</strong>`
+          : author;
+      }).join(", ");
+    };
+  
+    const printableContent = `
+      <html>
+        <head>
+          <title>Print Papers</title>
+          <style>
+            @media print {
+              body {
+                font-family: Arial, sans-serif;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+              th, td {
+                border: 1px solid black;
+                padding: 8px;
+                text-align: left;
+              }
+              th {
+                background-color: #f2f2f2;
+              }
+              a {
+                display: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>Research Papers</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Authors</th>
+                <th>Department</th>
+                <th>Indexing</th>
+                <th>Status</th>
+                <th>Month/Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredPapers
+                .map(
+                  (paper) => `
+                  <tr>
+                    <td>${paper.title}(${paper.type})</td>
+                    <td>${formatAuthorsForPrint(paper.authors)}</td>
+                    <td>${paper.department}</td>
+                    <td>${paper.indexing}</td>
+                    <td>${paper.status}</td>
+                    <td>${paper.monthYear}</td>
+                  </tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+  
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(printableContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+  
+  
   const filteredPapers = papers
     .filter((paper) =>
       paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -142,6 +150,13 @@ const HODDashboard = () => {
     .filter((paper) => (filterStatus === "all" ? true : paper.status === filterStatus))
     .filter((paper) => (filterDepartment === "all" ? true : paper.department === filterDepartment))
     .filter((paper) => (filterIndexing === "all" ? true : paper.indexing === filterIndexing))
+    .filter((paper) => {
+      if (!filterYear && !filterMonth) return true;
+      const date = new Date(paper.monthYear);
+      const yearMatch = filterYear ? date.getFullYear().toString() === filterYear : true;
+      const monthMatch = filterMonth ? (date.getMonth() + 1).toString() === filterMonth : true;
+      return yearMatch && monthMatch;
+    })
     .sort((a, b) => {
       if (sortBy === "monthYear") {
         return new Date(b.monthYear) - new Date(a.monthYear);
@@ -158,6 +173,10 @@ const HODDashboard = () => {
       }
     });
 
+  const uniqueDepartments = [...new Set(papers.map((paper) => paper.department))];
+  const uniqueIndexing = [...new Set(papers.map((paper) => paper.indexing))];
+  const uniqueStatuses = [...new Set(papers.map((paper) => paper.status))];
+
   return (
     <div className="hod-dashboard-container">
       <button className="sidebar-toggle" onClick={toggleSidebar}>
@@ -166,6 +185,7 @@ const HODDashboard = () => {
       <div className={`hod-sidebar ${sidebarOpen ? "open" : ""}`}>
         <h2 style={{ color: "white" }}>Admin Dashboard</h2>
         <button onClick={handleLogout}>🔓 Logout</button>
+        <button onClick={handlePrint}>🖨 Print</button>
       </div>
 
       <div className="hod-main-content">
@@ -214,14 +234,29 @@ const HODDashboard = () => {
               </option>
             ))}
           </select>
+
+          <input
+            type="text"
+            placeholder="Filter by Year (YYYY)"
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Filter by Month (MM)"
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+          />
         </div>
 
-        <ul className="hod-paper-list">
+        <p>Total Papers: {filteredPapers.length}</p>
+
+        <ul className="hod-paper-list" id="printable-area">
           {filteredPapers.map((paper, index) => (
             <React.Fragment key={paper.id}>
               <li>
                 <strong>{paper.title}</strong> ({paper.type})
-                <p>Authors: {paper.authors}</p>
+                <p>Authors: {highlightAuthors(paper.authors)}</p>
                 <p>Department: {paper.department}</p>
                 <p>Indexing: {paper.indexing}</p>
                 <p>Status: {paper.status}</p>
@@ -234,7 +269,6 @@ const HODDashboard = () => {
                     📜 View Certificate
                   </a>
                 )}
-                
               </li>
               {index < filteredPapers.length - 1 && <hr className="dotted-line" />}
             </React.Fragment>

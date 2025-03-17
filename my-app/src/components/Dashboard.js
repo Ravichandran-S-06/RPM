@@ -22,6 +22,18 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [showOtherDepartmentInput, setShowOtherDepartmentInput] = useState(false);
+
+  const departments = [
+    "Computer Science & Engineering",
+    "Computer Science & Engineering (AI & ML)",
+    "Information Science & Engineering",
+    "Mechanical Engineering",
+    "Electronics & Communication Engineering",
+    "Electrical & Electronics Engineering",
+    "Civil Engineering",
+    "Other"
+  ];
 
   const navigate = useNavigate();
 
@@ -70,6 +82,7 @@ const Dashboard = () => {
       setPaperLink("");
       setCertLink("");
       setIndexing("");
+      setShowOtherDepartmentInput(false);
       alert("Paper details saved successfully!");
     } catch (error) {
       console.error("Error adding document: ", error);
@@ -96,6 +109,7 @@ const Dashboard = () => {
     setCertLink(paper.certLink);
     setIndexing(paper.indexing);
     setEditingId(paper.id);
+    setShowOtherDepartmentInput(!departments.includes(paper.department));
   };
 
   const handleLogout = async () => {
@@ -126,7 +140,34 @@ const Dashboard = () => {
           <option value="In Review">In Review</option>
           <option value="Accepted">Accepted</option>
         </select>
-        <input type="text" placeholder="Full Name of the Department" value={department} onChange={(e) => setDepartment(e.target.value)} required />
+        <select
+          value={department === "" && showOtherDepartmentInput ? "Other" : department}
+          onChange={(e) => {
+            if (e.target.value === "Other") {
+              setDepartment("");
+              setShowOtherDepartmentInput(true);
+            } else {
+              setDepartment(e.target.value);
+              setShowOtherDepartmentInput(false);
+            }
+          }}
+          required
+        >
+          {departments.map((dept) => (
+            <option key={dept} value={dept}>
+              {dept}
+            </option>
+          ))}
+        </select>
+        {showOtherDepartmentInput && (
+          <input
+            type="text"
+            placeholder="Full Name of the Department"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            required
+          />
+        )}
         <input type="url" placeholder="Google Drive Link (Paper PDF) Make the link accessible to view" value={paperLink} onChange={(e) => setPaperLink(e.target.value)} required />
         <input type="url" placeholder="Google Drive Link (Certificate) (Optional)" value={certLink} onChange={(e) => setCertLink(e.target.value)} />
         <input type="text" placeholder="Indexing (e.g., Springer, Scopus)" value={indexing} onChange={(e) => setIndexing(e.target.value)} required />
