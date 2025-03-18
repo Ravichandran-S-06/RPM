@@ -17,12 +17,15 @@ const Auth = ({ isSignUp }) => {
       let userCredential;
       if (isSignUp) {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-      }
-  
-      const loggedInUser = userCredential?.user; // Ensure `user` exists
-  
+        alert("✅ Sign-up successful! You can now log in. You will be redirected to the homepage.");
+        navigate("/"); // Redirect to homepage
+        return; // Stop execution to prevent navigating to the dashboard
+      } 
+
+      // Login flow
+      userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const loggedInUser = userCredential?.user;
+
       if (loggedInUser?.email === "admin@vvce.ac.in") {
         navigate("/hod-dashboard");
       } else {

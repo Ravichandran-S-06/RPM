@@ -26,16 +26,34 @@ const HODDashboard = () => {
       }
       setUser(currentUser);
     });
-
+  
     const unsubscribePapers = onSnapshot(collection(db, "papers"), (snapshot) => {
-      setPapers(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const papersData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  
+      // Use a Map to store unique paper titles with strict normalization
+      const uniquePapersMap = new Map();
+      papersData.forEach((paper) => {
+        const normalizedTitle = paper.title
+          .trim() // Remove leading/trailing spaces
+          .replace(/\s+/g, " ") // Replace multiple spaces with a single space
+          .toLowerCase(); // Convert to lowercase for consistency
+  
+        if (!uniquePapersMap.has(normalizedTitle)) {
+          uniquePapersMap.set(normalizedTitle, paper);
+        }
+      });
+  
+      setPapers(Array.from(uniquePapersMap.values()));
     });
-
+  
     return () => {
       unsubscribeAuth();
       unsubscribePapers();
     };
   }, [navigate]);
+  
+  
+  
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -50,7 +68,7 @@ const HODDashboard = () => {
     return authors.split(", ").map((author, index) => {
       const lowerAuthor = author.toLowerCase();
       const isHighlighted = lowerAuthor.startsWith("prof.") || lowerAuthor.startsWith("dr.");
-  
+
       return (
         <React.Fragment key={index}>
           {isHighlighted ? (
@@ -63,7 +81,6 @@ const HODDashboard = () => {
       );
     });
   };
-  
 
   const handlePrint = () => {
     const formatAuthorsForPrint = (authors) => {
@@ -74,7 +91,7 @@ const HODDashboard = () => {
           : author;
       }).join(", ");
     };
-  
+
     const printableContent = `
       <html>
         <head>
@@ -113,6 +130,7 @@ const HODDashboard = () => {
                 <th>Indexing</th>
                 <th>Status</th>
                 <th>Month/Year</th>
+                <th>Name</th>
               </tr>
             </thead>
             <tbody>
@@ -120,12 +138,13 @@ const HODDashboard = () => {
                 .map(
                   (paper) => `
                   <tr>
-                    <td>${paper.title}(${paper.type})</td>
+                    <td>${paper.title} (${paper.type})</td>
                     <td>${formatAuthorsForPrint(paper.authors)}</td>
                     <td>${paper.department}</td>
                     <td>${paper.indexing}</td>
                     <td>${paper.status}</td>
                     <td>${paper.monthYear}</td>
+                    <td>${paper.journalConferenceName}</td>
                   </tr>`
                 )
                 .join("")}
@@ -134,14 +153,13 @@ const HODDashboard = () => {
         </body>
       </html>
     `;
-  
+
     const printWindow = window.open("", "_blank");
     printWindow.document.write(printableContent);
     printWindow.document.close();
     printWindow.print();
   };
-  
-  
+
   const filteredPapers = papers
     .filter((paper) =>
       paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,6 +279,7 @@ const HODDashboard = () => {
                 <p>Indexing: {paper.indexing}</p>
                 <p>Status: {paper.status}</p>
                 <p>Month/Year: {paper.monthYear}</p>
+                <p>Journal/Conference Name: {paper.journalConferenceName}</p>
                 <a href={paper.paperLink} target="_blank" rel="noopener noreferrer">
                   📄 View Paper
                 </a>
