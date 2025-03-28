@@ -4,6 +4,7 @@ import { auth, db } from "../firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import "./Dashboard.css";
+import { UserCircle2 } from "lucide-react"; // Assuming we're using lucide-react for icons
 
 const Dashboard = () => {
   const [papers, setPapers] = useState([]);
@@ -150,6 +151,12 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <div className="sidebar">
+      {user && (
+          <div className="profile-section">
+            <UserCircle2 size={48} className="profile-icon" />
+            <span className="username">{user.displayName || user.email.split('@')[0]}</span>
+          </div>
+        )}
         <button onClick={() => setShowAddPaper(true)}>Add Papers</button>
         <button onClick={() => setShowAddPaper(false)}>My Research Papers</button>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>

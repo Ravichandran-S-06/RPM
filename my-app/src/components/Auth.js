@@ -2,48 +2,61 @@ import React, { useState } from "react";
 import { auth } from "../firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import eye icons
-import "./Auth.css"; // Import CSS file
+import "./Auth.css";
 
 const Auth = ({ isSignUp }) => {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSignUp) {
+      if (password !== confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
+
+      if (password.length < 6) {
+        alert("Password must be at least 6 characters");
+        return;
+      }
+    }
+
     try {
       let userCredential;
       if (isSignUp) {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        alert("✅ Sign-up successful! You can now log in. You will be redirected to the homepage.");
-        navigate("/"); // Redirect to homepage
-        return; // Stop execution to prevent navigating to the dashboard
-      } 
-
-      // Login flow
-      userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const loggedInUser = userCredential?.user;
-
-      if (loggedInUser?.email === "admin@vvce.ac.in") {
-        navigate("/hod-dashboard");
+        alert("✅ Account created successfully! You can sign in now.");
+        navigate("/");
       } else {
-        navigate("/dashboard");
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+        if (userCredential.user.email === "admin@vvce.ac.in") {
+          navigate("/hod-dashboard");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (error) {
       alert(error.message);
     }
   };
 
-  const handlePasswordReset = async () => {
+  const handleForgotPassword = async () => {
     if (!email) {
-      alert("Please enter your email to reset your password.");
+      alert("Please enter your email to reset password.");
       return;
     }
+
     try {
       await sendPasswordResetEmail(auth, email);
-      alert("Password reset email sent! Check your inbox.");
+      alert("🔄 Password reset email sent! Check your inbox.");
     } catch (error) {
       alert(error.message);
     }
@@ -51,26 +64,104 @@ const Auth = ({ isSignUp }) => {
 
   return (
     <div className="auth-container">
-      <h2>{isSignUp ? "Sign Up" : "Login"}</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <div className="auth-card">
+        <h2>{isSignUp ? "Create an account" : "Welcome back"}</h2>
+        <p>{isSignUp ? "Sign up to start managing your research papers" : "Sign in to continue to your dashboard"}</p>
 
-        <div className="password-container">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <span className="eye-icon" onClick={() => setShowPassword(!showPassword)}>
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
-          </span>
-        </div>
+        <form onSubmit={handleSubmit}>
+          {isSignUp && (
+            <div className="form-group">
+              <label htmlFor="fullName">Full Name</label>
+              <input
+                id="fullName"
+                type="text"
+                placeholder="Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required={isSignUp}
+              />
+            </div>
+          )}
 
-        <button type="submit">{isSignUp ? "Sign Up" : "Login"}</button>
-      </form>
-      {!isSignUp && <button className="reset-btn" onClick={handlePasswordReset}>Forgot Password?</button>}
+          <div className="form-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@vvce.ac.in"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <div className="password-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder={isSignUp ? "Password must be at least 6 characters" : "Password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={isSignUp ? 6 : undefined}
+              />
+              <span
+                className="eye-icon"
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? "👁️" : "🔒"}
+              </span>
+            </div>
+            {isSignUp && <p className="password-hint"></p>}
+          </div>
+
+          {isSignUp && (
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <div className="password-wrapper">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <span
+                  className="eye-icon"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                >
+                  {showConfirmPassword ? "👁️" : "🔒"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {!isSignUp && (
+            <div className="forgot-password">
+              <button type="button" onClick={handleForgotPassword}>
+                Forgot Password?
+              </button>
+            </div>
+          )}
+
+          <button type="submit">{isSignUp ? "Create Account" : "Sign In"}</button>
+
+          {!isSignUp && (
+            <div className="signup-link">
+              Don't have an account? <a href="/signup">Sign up</a>
+            </div>
+          )}
+
+          {isSignUp && (
+            <div className="signin-link">
+              Already have an account? <a href="/login">Sign in</a>
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   );
 };
