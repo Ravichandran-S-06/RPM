@@ -10,7 +10,7 @@ const Home = () => {
 
       {/* Hero Section */}
       <div className="hero">
-        <h2>Streamline Your Research Paper Management</h2>
+        <h1>Streamline Your Research Paper Management</h1>
         <p>
           A beautifully designed platform for college to organize, track, 
           and collaborate on academic research papers.
